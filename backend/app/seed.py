@@ -4,7 +4,7 @@ Run: python -m app.seed
 """
 
 from app.database import SessionLocal, engine, Base
-from app.models import Course, Module, Lesson, Vocabulary, QuizQuestion, User
+from app.models import Course, Module, Lesson, Vocabulary, QuizQuestion, User, DictionaryWord
 import bcrypt
 
 
