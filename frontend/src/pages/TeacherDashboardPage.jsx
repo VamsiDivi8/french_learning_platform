@@ -32,6 +32,8 @@ export default function TeacherDashboardPage({ user, token }) {
   const [lessonForm, setLessonForm] = useState({ title: '', description: '', duration_minutes: 15, video_url: '' })
   const [vocabForm, setVocabForm] = useState({ french_word: '', english_meaning: '', example_sentence: '', audio_url: '' })
   const [quizForm, setQuizForm] = useState({ question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a' })
+  const [courseForm, setCourseForm] = useState({ title: '', level: 'A1', track: 'senior', description: '', image_url: '' })
+  const [moduleForm, setModuleForm] = useState({ title: '' })
 
   useEffect(() => {
     loadData()
@@ -233,6 +235,65 @@ export default function TeacherDashboardPage({ user, token }) {
     }
   }
 
+  const handleCourseSubmit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setModalError(null)
+    try {
+      const res = await fetch(`${API_URL}/api/teacher/courses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(courseForm)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Failed to create course.')
+
+      await reloadCurriculum()
+      if (data.id) {
+        setExpandedCourse(data.id)
+      }
+      closeModal()
+    } catch (err) {
+      setModalError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleModuleSubmit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setModalError(null)
+    try {
+      const res = await fetch(`${API_URL}/api/teacher/modules`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          course_id: modalTargetId,
+          ...moduleForm
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Failed to create module.')
+
+      await reloadCurriculum()
+      if (data.id) {
+        setExpandedModule(data.id)
+      }
+      closeModal()
+    } catch (err) {
+      setModalError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleDictDelete = async (wordId) => {
     if (!confirm('Are you sure you want to delete this word from the dictionary?')) return
     try {
@@ -260,6 +321,8 @@ export default function TeacherDashboardPage({ user, token }) {
     setVocabForm({ french_word: '', english_meaning: '', example_sentence: '', audio_url: '' })
     setQuizForm({ question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a' })
     setDictForm({ word: '', part_of_speech: 'noun', translation: '', definition: '', example_sentence_fr: '', example_sentence_en: '', audio_url: '' })
+    setCourseForm({ title: '', level: 'A1', track: 'senior', description: '', image_url: '' })
+    setModuleForm({ title: '' })
   }
 
   if (loading) {
@@ -430,7 +493,7 @@ export default function TeacherDashboardPage({ user, token }) {
             <p className="section-subtitle">Select a course to view modules and append lectures, vocabulary, or quizzes.</p>
 
             {/* Course Selector Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
               {courses.map((course) => (
                 <button
                   key={course.id}
@@ -442,11 +505,34 @@ export default function TeacherDashboardPage({ user, token }) {
                   <span>{course.title}</span>
                 </button>
               ))}
+              <button
+                onClick={() => {
+                  setActiveModal('course');
+                }}
+                className="btn btn-secondary"
+                style={{ marginLeft: 'auto', border: '1px dashed var(--color-primary-light)', color: 'var(--color-primary-light)' }}
+              >
+                ➕ Create Course
+              </button>
             </div>
 
             {/* Selected Course Modules */}
             {courses.filter(c => c.id === expandedCourse).map((course) => (
               <div key={course.id} className="module-list">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    Modules for {course.title}
+                  </h3>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setModalTargetId(course.id)
+                      setActiveModal('module')
+                    }}
+                  >
+                    ➕ Add Module
+                  </button>
+                </div>
                 {course.modules && course.modules.length === 0 ? (
                   <div className="empty-state">
                     <h3>No Modules</h3>
@@ -689,16 +775,140 @@ export default function TeacherDashboardPage({ user, token }) {
             {/* Modal Header */}
             <div className="auth-header" style={{ marginBottom: '24px' }}>
               <span className="auth-icon" style={{ marginBottom: '8px' }}>
-                {activeModal === 'lesson' ? '📖' : activeModal === 'vocab' ? '📝' : activeModal === 'dictionary' ? '📖' : '❓'}
+                {activeModal === 'course' ? '🌱' : activeModal === 'module' ? '📚' : activeModal === 'lesson' ? '📖' : activeModal === 'vocab' ? '📝' : activeModal === 'dictionary' ? '📖' : '❓'}
               </span>
               <h1>
-                {activeModal === 'lesson' ? 'Create Lesson' : activeModal === 'vocab' ? 'Add Vocabulary Card' : activeModal === 'dictionary' ? (editingWordId ? 'Edit Word' : 'Add Word') : 'Add Quiz Question'}
+                {activeModal === 'course' ? 'Create New Course' : activeModal === 'module' ? 'Add Course Module' : activeModal === 'lesson' ? 'Create Lesson' : activeModal === 'vocab' ? 'Add Vocabulary Card' : activeModal === 'dictionary' ? (editingWordId ? 'Edit Word' : 'Add Word') : 'Add Quiz Question'}
               </h1>
               <p>Add new course materials to the platform</p>
             </div>
 
             {/* Modal Error */}
             {modalError && <div className="auth-error" style={{ marginBottom: '16px' }}>{modalError}</div>}
+
+            {/* ── Form: Create Course ── */}
+            {activeModal === 'course' && (
+              <form onSubmit={handleCourseSubmit} className="auth-form">
+                <div className="form-group">
+                  <label htmlFor="course-title">Course Title *</label>
+                  <input
+                    id="course-title"
+                    type="text"
+                    required
+                    value={courseForm.title}
+                    onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+                    placeholder="e.g. French B2 - Upper Intermediate"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="course-level">Difficulty Level *</label>
+                  <select
+                    id="course-level"
+                    value={courseForm.level}
+                    onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })}
+                    style={{
+                      padding: '12px 16px',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-family)',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    <option value="A1">🌱 A1 (Beginner)</option>
+                    <option value="A2">📖 A2 (Elementary)</option>
+                    <option value="B1">🚀 B1 (Intermediate)</option>
+                    <option value="B2">🚀 B2 (Upper Intermediate)</option>
+                    <option value="C1">🚀 C1 (Advanced)</option>
+                    <option value="C2">🚀 C2 (Mastery)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="course-track">Student Track *</label>
+                  <select
+                    id="course-track"
+                    value={courseForm.track}
+                    onChange={(e) => setCourseForm({ ...courseForm, track: e.target.value })}
+                    style={{
+                      padding: '12px 16px',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-family)',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    <option value="junior">👶 Junior Track</option>
+                    <option value="senior">🎓 Senior Track</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="course-desc">Description</label>
+                  <textarea
+                    id="course-desc"
+                    value={courseForm.description}
+                    onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                    placeholder="Provide a brief summary of the course..."
+                    style={{
+                      padding: '12px 16px',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-family)',
+                      fontSize: '0.95rem',
+                      minHeight: '100px',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="course-image">Cover Image URL</label>
+                  <input
+                    id="course-image"
+                    type="url"
+                    value={courseForm.image_url}
+                    onChange={(e) => setCourseForm({ ...courseForm, image_url: e.target.value })}
+                    placeholder="e.g. https://example.com/cover.jpg"
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
+                    {submitting ? 'Creating...' : 'Create Course'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={submitting}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ── Form: Add Module ── */}
+            {activeModal === 'module' && (
+              <form onSubmit={handleModuleSubmit} className="auth-form">
+                <div className="form-group">
+                  <label htmlFor="module-title">Module Title *</label>
+                  <input
+                    id="module-title"
+                    type="text"
+                    required
+                    value={moduleForm.title}
+                    onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })}
+                    placeholder="e.g. Chapter 1: Basic Greetings"
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
+                    {submitting ? 'Creating...' : 'Add Module'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={submitting}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
 
             {/* ── Form: Add Lesson ── */}
             {activeModal === 'lesson' && (

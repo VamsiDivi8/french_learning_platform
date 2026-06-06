@@ -7,7 +7,7 @@ from app.models import (
     Enrollment, QuizResult, LessonProgress, Certificate
 )
 from app.auth_deps import get_current_teacher
-from app.schemas import LessonCreate, VocabularyCreate, QuizQuestionCreate
+from app.schemas import CourseCreate, ModuleCreate, LessonCreate, VocabularyCreate, QuizQuestionCreate
 
 router = APIRouter(prefix="/api/teacher", tags=["teacher"])
 
@@ -190,3 +190,71 @@ def create_quiz_question(
         "message": "Quiz question created successfully",
         "id": new_q.id
     }
+
+
+# ── POST create a course ──────────────────────────────
+@router.post("/courses", status_code=status.HTTP_201_CREATED)
+def create_course(
+    course_in: CourseCreate,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+):
+    """Create a new course. (Teacher Privilege Required)"""
+    existing = db.query(Course).filter(Course.title.ilike(course_in.title)).first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Course with title '{course_in.title}' already exists."
+        )
+
+    new_course = Course(
+        title=course_in.title.strip(),
+        level=course_in.level.strip().upper(),
+        track=course_in.track.strip().lower(),
+        description=course_in.description.strip() if course_in.description else None,
+        image_url=course_in.image_url.strip() if course_in.image_url else None
+    )
+    db.add(new_course)
+    db.commit()
+    db.refresh(new_course)
+    return {
+        "message": "Course created successfully",
+        "id": new_course.id,
+        "title": new_course.title
+    }
+
+
+# ── POST create a module ──────────────────────────────
+@router.post("/modules", status_code=status.HTTP_201_CREATED)
+def create_module(
+    module_in: ModuleCreate,
+    db: Session = Depends(get_db),
+    current_teacher: User = Depends(get_current_teacher),
+):
+    """Create a new module within a course. (Teacher Privilege Required)"""
+    course = db.query(Course).filter(Course.id == module_in.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    # Get max order to append to the end of the course
+    max_order = (
+        db.query(func.max(Module.order))
+        .filter(Module.course_id == module_in.course_id)
+        .scalar()
+    ) or 0
+
+    new_module = Module(
+        course_id=module_in.course_id,
+        title=module_in.title.strip(),
+        order=max_order + 1
+    )
+    db.add(new_module)
+    db.commit()
+    db.refresh(new_module)
+    return {
+        "message": "Module created successfully",
+        "id": new_module.id,
+        "title": new_module.title,
+        "order": new_module.order
+    }
+

@@ -150,6 +150,19 @@ class HealthCheck(BaseModel):
 
 # ── Teacher Admin Schemas ─────────────────────────────────────
 
+class CourseCreate(BaseModel):
+    title: str
+    level: str
+    track: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class ModuleCreate(BaseModel):
+    course_id: int
+    title: str
+
+
 class LessonCreate(BaseModel):
     module_id: int
     title: str
