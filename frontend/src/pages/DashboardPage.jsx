@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-const API_URL = 'http://localhost:8000'
+import API_URL from '../config'
 
 const LEVEL_CONFIG = {
   A1: { emoji: '🌱', gradient: 'a1', color: '#34d399' },

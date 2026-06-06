@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 
-const API_URL = 'http://localhost:8000'
+import API_URL from '../config'
 
 export default function CertificatePage({ user, token }) {
   const { courseId } = useParams()

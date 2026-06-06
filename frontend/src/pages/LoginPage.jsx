@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const API_URL = 'http://localhost:8000'
+import API_URL from '../config'
 
 export default function LoginPage({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false)

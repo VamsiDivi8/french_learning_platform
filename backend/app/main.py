@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import courses, auth, lessons, progress, teacher, dictionary
+import os
 
 # Create all database tables
 Base.metadata.create_all(bind=engine)
@@ -14,13 +15,18 @@ app = FastAPI(
 )
 
 # CORS — allow the React frontend to talk to us
+allowed_origins = [
+    "http://localhost:5173",    # Vite dev server
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",    # Fallback
+]
+env_origins = os.getenv("ALLOWED_ORIGINS")
+if env_origins:
+    allowed_origins.extend([origin.strip() for origin in env_origins.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",    # Vite dev server
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",    # Fallback
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

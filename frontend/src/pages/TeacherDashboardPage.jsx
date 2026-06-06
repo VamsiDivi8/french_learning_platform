@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-const API_URL = 'http://localhost:8000'
+import API_URL from '../config'
 
 export default function TeacherDashboardPage({ user, token }) {
   const [activeTab, setActiveTab] = useState('analytics')

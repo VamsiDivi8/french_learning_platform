@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-const API_URL = 'http://localhost:8000'
+import API_URL from '../config'
 
 const POS_CONFIG = {
   noun: { emoji: '🏷️', label: 'Noun', color: '#10b981' },
