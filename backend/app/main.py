@@ -2,10 +2,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import courses, auth, lessons, progress, teacher, dictionary
+from app.seed import seed
 import os
 
 # Create all database tables
 Base.metadata.create_all(bind=engine)
+
+# Auto-seed database if empty
+try:
+    seed()
+except Exception as e:
+    print(f"Error seeding database: {e}")
 
 # Initialize FastAPI app
 app = FastAPI(
